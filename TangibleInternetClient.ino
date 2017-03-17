@@ -7,6 +7,7 @@
 
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
+#define INPUT_COMMAND_SIZE 3
 
 int previousDialState = LOW;
 int previousReceiverLeverState = LOW;
@@ -20,6 +21,8 @@ int currentIPDigitIndex = 0;
 
 void setupPins(){  
   pinMode(ROTARY_PIN, INPUT);
+  pinMode(RECEIVER_LEVER, INPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void setup() {
@@ -40,6 +43,7 @@ void setup() {
 void loop() {    
   handlePickingHangingUp();
   handleDialling();
+  processIncomingCommand();
   delay(10);
 }
 
@@ -48,9 +52,13 @@ void loop() {
 void handlePickingHangingUp(){
   int receiverLeverState = digitalRead(RECEIVER_LEVER);
   if(receiverLeverState != previousReceiverLeverState){
-    int pickedUp = receiverLeverState == HIGH;
-    Serial.print(pickedUp ? "p:" : "h:");
+    int hungUp = receiverLeverState == LOW;
+    Serial.print(hungUp ? "h:" : "p:");
     Serial.print('\n');
+
+    if(hungUp){
+      currentIPDigitIndex = 0;
+    }
   }
   previousReceiverLeverState = receiverLeverState;
 }
@@ -68,7 +76,7 @@ void handleDialling(){
   bool finishedDiallingDigit = millis() > lastDialReadTime + DIAL_FINISHED_TIMEOUT && dialHighStateCounter > 0;
   
   if(finishedDiallingDigit){
-    if(currentIPDigitIndex == 0) sendDiallingCommand();
+    sendDiallingCommand();
     
     ipAddressDigits[currentIPDigitIndex] = getDialledNumber(dialHighStateCounter);
     dialHighStateCounter = 0;
@@ -82,7 +90,6 @@ void handleDialling(){
   }
 }
 
-
 //BUSINESS LOGIC
 
 int getDialledNumber(int stateChanges) {
@@ -90,7 +97,21 @@ int getDialledNumber(int stateChanges) {
   return stateChanges;
 }
 
-//COMMANDS
+//SERIAL COMMUNICATION
+
+void processIncomingCommand(){
+  if(Serial.available() >= INPUT_COMMAND_SIZE){
+    String command = Serial.readStringUntil('\n');    
+    if(command.substring(0,1) == "r"){          
+      for(int i=0; i<4; i++){
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(100);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(100);
+      }
+    }
+  }
+}
 
 void sendConnectCommand(){
   String ipAddress = "";
