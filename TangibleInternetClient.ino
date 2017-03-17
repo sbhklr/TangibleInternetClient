@@ -1,12 +1,15 @@
 //#include <ZTimer.h>
 
 #define BAUD_RATE 9600
+
 #define ROTARY_PIN 2
+#define RECEIVER_LEVER 3
+
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
 
 int previousDialState = LOW;
-int previousReceiverState = LOW;
+int previousReceiverLeverState = LOW;
 
 int dialHighStateCounter = 0;
 unsigned long lastDialReadTime = 0;
@@ -35,6 +38,24 @@ void setup() {
 }
 
 void loop() {    
+  handlePickingHangingUp();
+  handleDialling();
+  delay(10);
+}
+
+//LOOP HANDLING
+
+void handlePickingHangingUp(){
+  int receiverLeverState = digitalRead(RECEIVER_LEVER);
+  if(receiverLeverState != previousReceiverLeverState){
+    int pickedUp = receiverLeverState == HIGH;
+    Serial.print(pickedUp ? "p:" : "h:");
+    Serial.print('\n');
+  }
+  previousReceiverLeverState = receiverLeverState;
+}
+
+void handleDialling(){
   int dialState = digitalRead(ROTARY_PIN);
 
   if(dialState != previousDialState && dialState == HIGH){
@@ -44,19 +65,32 @@ void loop() {
 
   previousDialState = dialState;  
 
-  if(millis() > lastDialReadTime + DIAL_FINISHED_TIMEOUT && dialHighStateCounter > 0){
-    //Serial.println(getDialledNumber(dialHighStateCounter));
+  bool finishedDiallingDigit = millis() > lastDialReadTime + DIAL_FINISHED_TIMEOUT && dialHighStateCounter > 0;
+  
+  if(finishedDiallingDigit){
+    if(currentIPDigitIndex == 0) sendDiallingCommand();
+    
     ipAddressDigits[currentIPDigitIndex] = getDialledNumber(dialHighStateCounter);
     dialHighStateCounter = 0;
     ++currentIPDigitIndex;
   }
 
-  if(currentIPDigitIndex == IP_ADDRESS_LENGTH) {
+  bool finishedDiallingNumber = currentIPDigitIndex == IP_ADDRESS_LENGTH;
+
+  if(finishedDiallingNumber) {
    sendConnectCommand();
   }
-
-  delay(10);
 }
+
+
+//BUSINESS LOGIC
+
+int getDialledNumber(int stateChanges) {
+  if(stateChanges == 10) return 0;
+  return stateChanges;
+}
+
+//COMMANDS
 
 void sendConnectCommand(){
   String ipAddress = "";
@@ -82,9 +116,4 @@ void sendHangUpCommand(){
 void sendDiallingCommand(){
   Serial.print("d:");
   Serial.print('\n');
-}
-
-int getDialledNumber(int stateChanges) {
-  if(stateChanges == 10) return 0;
-  return stateChanges;
 }
