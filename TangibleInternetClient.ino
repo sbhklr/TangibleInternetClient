@@ -4,10 +4,12 @@
 
 #define ROTARY_PIN 2
 #define RECEIVER_LEVER 3
+#define SELENOID_PIN 4
 
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
 #define INPUT_COMMAND_SIZE 3
+#define RINGTONE_DELAY 50
 
 int previousDialState = LOW;
 int previousReceiverLeverState = LOW;
@@ -23,6 +25,7 @@ void setupPins(){
   pinMode(ROTARY_PIN, INPUT);
   pinMode(RECEIVER_LEVER, INPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(SELENOID_PIN, OUTPUT);
 }
 
 void setup() {
@@ -103,12 +106,8 @@ void processIncomingCommand(){
   if(Serial.available() >= INPUT_COMMAND_SIZE){
     String command = Serial.readStringUntil('\n');    
     if(command.substring(0,1) == "r"){          
-      for(int i=0; i<4; i++){
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(100);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(100);
-      }
+      ring();
+      ring();
     }
   }
 }
@@ -137,4 +136,14 @@ void sendHangUpCommand(){
 void sendDiallingCommand(){
   Serial.print("d:");
   Serial.print('\n');
+}
+
+//ACTUATORS
+void ring() {  
+  for (int i = 0; i < 12; ++i) {
+    digitalWrite(SELENOID_PIN, HIGH);
+    delay(RINGTONE_DELAY);
+    digitalWrite(SELENOID_PIN, LOW);
+    delay(RINGTONE_DELAY);
+  }
 }
