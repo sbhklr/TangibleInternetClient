@@ -5,7 +5,9 @@
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
 
-int previousDialState = 0;
+int previousDialState = LOW;
+int previousReceiverState = LOW;
+
 int dialHighStateCounter = 0;
 unsigned long lastDialReadTime = 0;
 int ipAddressDigits[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -50,17 +52,36 @@ void loop() {
   }
 
   if(currentIPDigitIndex == IP_ADDRESS_LENGTH) {
-    String ipAddress = "";
-    for(int i=0; i<IP_ADDRESS_LENGTH; ++i){
-        ipAddress += String(ipAddressDigits[i]);
-    }
-    ipAddress += '\n';
-    currentIPDigitIndex = 0;
-    String command = "c:";
-    Serial.print(command + ipAddress);
+   sendConnectCommand();
   }
 
   delay(10);
+}
+
+void sendConnectCommand(){
+  String ipAddress = "";
+  for(int i=0; i<IP_ADDRESS_LENGTH; ++i){
+      ipAddress += String(ipAddressDigits[i]);
+  }
+  ipAddress += '\n';
+  currentIPDigitIndex = 0;
+  String command = "c:";
+  Serial.print(command + ipAddress);
+}
+
+void sendPickupCommand(){
+  Serial.print("p:");
+  Serial.print('\n');
+}
+
+void sendHangUpCommand(){
+  Serial.print("h:");
+  Serial.print('\n');
+}
+
+void sendDiallingCommand(){
+  Serial.print("d:");
+  Serial.print('\n');
 }
 
 int getDialledNumber(int stateChanges) {
