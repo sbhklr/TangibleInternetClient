@@ -1,4 +1,4 @@
-//#include <ZTimer.h>
+#include <ZTimer.h>
 
 #define BAUD_RATE 9600
 
@@ -9,8 +9,9 @@
 
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
-#define INPUT_COMMAND_SIZE 3
+#define INPUT_COMMAND_SIZE 4
 #define RINGTONE_DELAY 50
+#define RINGTONE_WAIT_TIME 2750
 #define TOKEN_BASE_RESISTOR 1000
 
 #define MODE_ARTICLE 0
@@ -27,7 +28,7 @@ unsigned long lastDialReadTime = 0;
 int ipAddressDigits[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 int currentIPDigitIndex = 0;
 
-//ZTimer dialTimer;
+ZTimer ringTimer;
 
 void setupPins(){  
   pinMode(ROTARY_PIN, INPUT);
@@ -41,18 +42,14 @@ void setup() {
   Serial.begin(BAUD_RATE);
   setupPins();
 
-  /*
-  dialTimer.SetWaitTime(1000);
-  dialTimer.SetCallBack([&]() {
-    Serial.println(getDialledNumber(dialHighStateCounter));    
-    dialTimer.StopTimer();
+  ringTimer.SetWaitTime(RINGTONE_WAIT_TIME);
+  ringTimer.SetCallBack([&]() {
+    ring();    
   });
-  */
-
-  //Serial.println("Tangible Internet ready.");
 }
 
 void loop() {    
+  ringTimer.CheckTime();
   switchMode();
   handlePickingHangingUp();
   handleDialling();
@@ -114,7 +111,7 @@ void switchMode(){
   float vout = (tokenValue / 1024.0) * 5;
   int resistorValue = TOKEN_BASE_RESISTOR * (5.0 / vout -1);
   int newMode;
-  
+
   if(resistorValue > 4500 && resistorValue < 5100){
     newMode = MODE_DEVELOPER;
     return;
@@ -140,10 +137,11 @@ void switchMode(){
 void processIncomingCommand(){
   if(Serial.available() >= INPUT_COMMAND_SIZE){
     String command = Serial.readStringUntil('\n');    
-    if(command.substring(0,1) == "r"){          
-      ring();
-      delay(1300);
-      ring();
+    if(command.substring(0,1) == "r"){                      
+      ringTimer.ResetTimer(true);      
+      ringTimer.SetLastTime(ringTimer.GetNow()-RINGTONE_WAIT_TIME);
+    } else if(command.substring(0,2) == "r:0"){
+      ringTimer.StopTimer();
     }
   }
 }
