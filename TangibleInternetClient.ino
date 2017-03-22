@@ -1,6 +1,6 @@
 #include <ZTimer.h>
 
-#define BAUD_RATE 9600
+#define BAUD_RATE 19200
 
 #define ROTARY_PIN 2
 #define RECEIVER_LEVER 3
