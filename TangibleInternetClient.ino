@@ -49,12 +49,12 @@ void setup() {
 }
 
 void loop() {
+  processIncomingCommand();
   stopRingingIfNecessary();
   ringTimer.CheckTime();
   switchMode();
   handlePickingHangingUp();
-  handleDialling();
-  processIncomingCommand();
+  handleDialling();  
   delay(10);
 }
 
@@ -146,10 +146,10 @@ void switchMode(){
 void processIncomingCommand(){
   if(Serial.available() >= INPUT_COMMAND_SIZE){
     String command = Serial.readStringUntil('\n');    
-    if(command.substring(0,1) == "r"){                      
+    if(command.substring(0,3) == "r:1"){                      
       ringTimer.ResetTimer(true);      
       ringTimer.SetLastTime(ringTimer.GetNow()-RINGTONE_WAIT_TIME);
-    } else if(command.substring(0,2) == "r:0"){
+    } else if(command.substring(0,3) == "r:0"){
       ringTimer.StopTimer();
     }
   }
