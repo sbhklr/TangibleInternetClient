@@ -14,14 +14,21 @@
 #define RINGTONE_WAIT_TIME 2750
 #define TOKEN_BASE_RESISTOR 1000
 
-#define MODE_ARTICLE 0
-#define MODE_INCOGNITO 1
-#define MODE_DEVELOPER 2
-#define MODE_BROWSER_HISTORY 3
+#define MODE_ARTICLE "a"
+#define MODE_DEVELOPER "d"
+#define MODE_INCOGNITO "i"
+#define MODE_BROWSER_HISTORY "h"
+
+#define MODE_ARTICLE_RESISTOR_VALUE 4700
+#define MODE_DEVELOPER_RESISTOR_VALUE 560
+#define MODE_INCOGNITO_RESISTOR_VALUE 220
+#define MODE_BROWSER_HISTORY_RESISTOR_VALUE 1000
+#define MODE_RESISTOR_VALUE_TOLERANCE 0.05
+
 
 int previousDialState = LOW;
 int previousReceiverLeverState = LOW;
-int currentMode = MODE_ARTICLE;
+String currentMode = MODE_ARTICLE;
 
 int dialHighStateCounter = 0;
 unsigned long lastDialReadTime = 0;
@@ -115,30 +122,39 @@ int getDialledNumber(int stateChanges) {
   return stateChanges;
 }
 
+bool checkResistorValue(int resistorValue, int targetValue){
+  int lowerBound = targetValue * (1.0 - MODE_RESISTOR_VALUE_TOLERANCE);
+  int upperBound = targetValue * (1.0 + MODE_RESISTOR_VALUE_TOLERANCE);
+  return resistorValue >= lowerBound && resistorValue <= upperBound;
+}
+
 void switchMode(){
   int tokenValue = analogRead(MICROPHONE_PIN);
-  float vout = (tokenValue / 1024.0) * 5;
-  int resistorValue = TOKEN_BASE_RESISTOR * (5.0 / vout -1);
-  int newMode;
+  float vout = (tokenValue / 1024.0) * 5.0;  
+  int resistorValue = (TOKEN_BASE_RESISTOR * vout) / (5.0 - vout);
+  
+  if(resistorValue <= 0 || vout == 5.0) return;
 
-  if(resistorValue > 4500 && resistorValue < 5100){
-    newMode = MODE_DEVELOPER;
+  String newMode;
+
+  if(checkResistorValue(resistorValue, MODE_ARTICLE_RESISTOR_VALUE)){
+    newMode = MODE_ARTICLE;    
+  } else if(checkResistorValue(resistorValue, MODE_INCOGNITO_RESISTOR_VALUE)){
+    newMode = MODE_INCOGNITO;    
+  } else if(checkResistorValue(resistorValue, MODE_DEVELOPER_RESISTOR_VALUE)){
+    newMode = MODE_DEVELOPER;    
+  } else if(checkResistorValue(resistorValue, MODE_BROWSER_HISTORY_RESISTOR_VALUE)){
+    newMode = MODE_BROWSER_HISTORY;    
+  } else {
     return;
   }
-
-  if(resistorValue > 6000 && resistorValue < 7000){
-    newMode = MODE_DEVELOPER;
-    return;
-  }
-
-  newMode = MODE_ARTICLE;
 
   if(newMode != currentMode) {
     currentMode = newMode;
     Serial.print("m:");
-    Serial.println(currentMode);
+    Serial.print(currentMode);
     Serial.print('\n');
-  }
+  }    
 }
 
 //SERIAL COMMUNICATION
