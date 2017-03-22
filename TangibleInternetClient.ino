@@ -18,6 +18,7 @@
 #define MODE_DEVELOPER "d"
 #define MODE_INCOGNITO "i"
 #define MODE_BROWSER_HISTORY "h"
+#define MODE_NONE "n"
 
 #define MODE_ARTICLE_RESISTOR_VALUE 4700
 #define MODE_DEVELOPER_RESISTOR_VALUE 560
@@ -28,7 +29,7 @@
 
 int previousDialState = LOW;
 int previousReceiverLeverState = LOW;
-String currentMode = MODE_ARTICLE;
+String currentMode = MODE_NONE;
 
 int dialHighStateCounter = 0;
 unsigned long lastDialReadTime = 0;
@@ -132,12 +133,11 @@ void switchMode(){
   int tokenValue = analogRead(MICROPHONE_PIN);
   float vout = (tokenValue / 1024.0) * 5.0;  
   int resistorValue = (TOKEN_BASE_RESISTOR * vout) / (5.0 - vout);
-  
-  if(resistorValue <= 0 || vout == 5.0) return;
-
   String newMode;
-
-  if(checkResistorValue(resistorValue, MODE_ARTICLE_RESISTOR_VALUE)){
+  
+  if(resistorValue <= 0 || vout == 5.0){
+    newMode = MODE_NONE;
+  } else if(checkResistorValue(resistorValue, MODE_ARTICLE_RESISTOR_VALUE)){
     newMode = MODE_ARTICLE;    
   } else if(checkResistorValue(resistorValue, MODE_INCOGNITO_RESISTOR_VALUE)){
     newMode = MODE_INCOGNITO;    
