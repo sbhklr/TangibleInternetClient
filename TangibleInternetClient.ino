@@ -10,7 +10,7 @@
 #define DIAL_FINISHED_TIMEOUT 100
 #define IP_ADDRESS_LENGTH 12
 #define INPUT_COMMAND_SIZE 4
-#define RINGTONE_DELAY 50
+#define RINGTONE_DELAY 45
 #define RINGTONE_WAIT_TIME 2750
 #define TOKEN_BASE_RESISTOR 1000
 
@@ -43,12 +43,13 @@ void setup() {
   setupPins();
 
   ringTimer.SetWaitTime(RINGTONE_WAIT_TIME);
-  ringTimer.SetCallBack([&]() {
+  ringTimer.SetCallBack([&]() {    
     ring();    
   });
 }
 
-void loop() {    
+void loop() {
+  stopRingingIfNecessary();
   ringTimer.CheckTime();
   switchMode();
   handlePickingHangingUp();
@@ -100,6 +101,14 @@ void handleDialling(){
 }
 
 //BUSINESS LOGIC
+
+bool stopRingingIfNecessary(){
+  if(digitalRead(RECEIVER_LEVER) == HIGH){
+    ringTimer.StopTimer();
+    return true;
+  }
+  return false;
+}
 
 int getDialledNumber(int stateChanges) {
   if(stateChanges == 10) return 0;
@@ -180,5 +189,6 @@ void ring() {
     delay(RINGTONE_DELAY);
     digitalWrite(SELENOID_PIN, LOW);
     delay(RINGTONE_DELAY);
+    if(stopRingingIfNecessary()) return;
   }
 }
