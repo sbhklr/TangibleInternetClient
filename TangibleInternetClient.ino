@@ -20,6 +20,10 @@
 #define MODE_BROWSER_HISTORY "h"
 #define MODE_NONE "n"
 
+#define COMMAND_BELL_ON "b:1"
+#define COMMAND_BELL_OFF "b:0"
+#define COMMAND_RESET "rs:"
+
 #define MODE_ARTICLE_RESISTOR_VALUE 4700
 #define MODE_DEVELOPER_RESISTOR_VALUE 560
 #define MODE_INCOGNITO_RESISTOR_VALUE 220
@@ -76,7 +80,7 @@ void handlePickingHangingUp(){
     Serial.print('\n');
 
     if(hungUp){
-      currentIPDigitIndex = 0;
+      resetDialling();
     }
   }
   previousReceiverLeverState = receiverLeverState;
@@ -109,6 +113,10 @@ void handleDialling(){
 }
 
 //BUSINESS LOGIC
+
+void resetDialling(){
+  currentIPDigitIndex = 0;
+}
 
 bool stopRingingIfNecessary(){
   if(digitalRead(RECEIVER_LEVER) == HIGH){
@@ -161,12 +169,15 @@ void switchMode(){
 
 void processIncomingCommand(){
   if(Serial.available() >= INPUT_COMMAND_SIZE){
-    String command = Serial.readStringUntil('\n');    
-    if(command.substring(0,3) == "r:1"){                      
+    String command = Serial.readStringUntil('\n').substring(0,3);   
+
+    if(command == COMMAND_BELL_ON){                      
       ringTimer.ResetTimer(true);      
       ringTimer.SetLastTime(ringTimer.GetNow()-RINGTONE_WAIT_TIME);
-    } else if(command.substring(0,3) == "r:0"){
+    } else if(command == COMMAND_BELL_OFF){
       ringTimer.StopTimer();
+    } else if(command == COMMAND_RESET){
+      resetDialling();
     }
   }
 }
